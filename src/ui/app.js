@@ -36,20 +36,20 @@ export function App({ db, mode, initial, switchMode }) {
 
   const route = hash.replace(/^#/, '') || '/';
   let screen;
-  if (route.startsWith('/transaksi')) screen = html`<${TxList} route=${route} />`;
-  else if (route.startsWith('/portofolio')) screen = html`<${Portfolio} route=${route} />`;
-  else if (route.startsWith('/lainnya')) screen = html`<${More} route=${route} />`;
+  if (route.startsWith('/transactions')) screen = html`<${TxList} route=${route} />`;
+  else if (route.startsWith('/portfolio')) screen = html`<${Portfolio} route=${route} />`;
+  else if (route.startsWith('/more')) screen = html`<${More} route=${route} />`;
   else screen = html`<${Dashboard} route=${route} />`;
 
   const tab = (href, text, icon, match) => html`<a href=${href} class=${match ? 'on' : ''}>${icon()}<span>${text}</span></a>`;
   return html`<${Ctx.Provider} value=${ctx}>
     ${screen}
-    <nav class="nav" aria-label="Navigasi utama">
-      ${tab('#/', 'Ringkasan', Icon.home, route === '/' || route.startsWith('/ringkasan'))}
-      ${tab('#/transaksi', 'Transaksi', Icon.list, route.startsWith('/transaksi'))}
-      <button class="fab" aria-label="Tambah transaksi" onClick=${() => setForm({ tx: null })}>+</button>
-      ${tab('#/portofolio', 'Portofolio', Icon.pie, route.startsWith('/portofolio'))}
-      ${tab('#/lainnya', 'Lainnya', Icon.more, route.startsWith('/lainnya'))}
+    <nav class="nav" aria-label="Main navigation">
+      ${tab('#/', 'Summary', Icon.home, route === '/')}
+      ${tab('#/transactions', 'Transactions', Icon.list, route.startsWith('/transactions'))}
+      <button class="fab" aria-label="Add transaction" onClick=${() => setForm({ tx: null })}>+</button>
+      ${tab('#/portfolio', 'Portfolio', Icon.pie, route.startsWith('/portfolio'))}
+      ${tab('#/more', 'More', Icon.more, route.startsWith('/more'))}
     </nav>
     ${form && html`<${TxForm} key=${form.tx?.id ?? 'new'} initial=${form.tx} preset=${form.preset} onClose=${() => setForm(null)} />`}
     <${Toast} toast=${toast} onClose=${() => setToast(null)} />
@@ -60,9 +60,9 @@ export function App({ db, mode, initial, switchMode }) {
 export function TopBar({ title, back, right }) {
   const { isTest } = useApp();
   return html`<header class="topbar">
-    ${back && html`<a class="iconbtn" href=${back} aria-label="Kembali">${Icon.back()}</a>`}
+    ${back && html`<a class="iconbtn" href=${back} aria-label="Back">${Icon.back()}</a>`}
     <h1>${title}</h1>
-    ${isTest && html`<span class="badge-uji">DATA UJI</span>`}
+    ${isTest && html`<span class="badge-uji">TEST DATA</span>`}
     ${right}
   </header>`;
 }

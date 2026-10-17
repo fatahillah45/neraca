@@ -1,5 +1,5 @@
-// Konstanta model data. Jenis transaksi menentukan aturan hitung dan sengaja tetap di kode;
-// label, urutan, dan visibilitasnya disimpan sebagai data (lihat settings.typeGroups).
+// Data model constants. Transaction types define the accounting rules and stay fixed in code;
+// their labels, order, and visibility are data (see settings.typeGroups).
 
 export const TX = Object.freeze({
   INCOME: 'income',
@@ -13,7 +13,7 @@ export const TX = Object.freeze({
 
 export const TX_TYPES = Object.values(TX);
 
-// Kelompok yang terlihat oleh pengguna sebagai "Jenis".
+// Groups shown to the user as "Type".
 export const GROUP = Object.freeze({
   INCOME: 'income',
   EXPENSE: 'expense',
@@ -24,12 +24,12 @@ export const GROUP = Object.freeze({
 });
 
 export const DEFAULT_TYPE_GROUPS = [
-  { key: GROUP.EXPENSE, label: 'Pengeluaran', hint: 'Expense', hidden: false },
-  { key: GROUP.INCOME, label: 'Pemasukan', hint: 'Income', hidden: false },
-  { key: GROUP.GIVING, label: 'Sedekah', hint: 'Human-being / Giving', hidden: false },
-  { key: GROUP.INVEST, label: 'Investasi', hint: 'Invested', hidden: false },
-  { key: GROUP.TRANSFER, label: 'Transfer', hint: 'Antar akun sendiri', hidden: false },
-  { key: GROUP.ADJUSTMENT, label: 'Penyesuaian', hint: 'Cocokkan saldo', hidden: false },
+  { key: GROUP.EXPENSE, label: 'Expense', hint: 'Spending (Pengeluaran)', hidden: false },
+  { key: GROUP.INCOME, label: 'Income', hint: 'Earnings (Pendapatan)', hidden: false },
+  { key: GROUP.GIVING, label: 'Human being', hint: 'Giving to others (Sedekah)', hidden: false },
+  { key: GROUP.INVEST, label: 'Invested', hint: 'Buying or cashing out investments (Investasi)', hidden: false },
+  { key: GROUP.TRANSFER, label: 'Transfer', hint: 'Between your own accounts', hidden: false },
+  { key: GROUP.ADJUSTMENT, label: 'Adjustment', hint: 'Match the balance to the bank', hidden: false },
 ];
 
 export function groupOfType(type) {
@@ -37,27 +37,28 @@ export function groupOfType(type) {
   return type;
 }
 
-/** Jenis yang memakai kategori dari tabel categories. */
+/** Types that use categories from the categories table. */
 export const CATEGORY_TYPES = [TX.INCOME, TX.EXPENSE, TX.GIVING];
 
+// Keys are stored data and must not change; only labels are translated.
 export const ACCOUNT_KINDS = [
-  { key: 'tunai', label: 'Tunai' },
-  { key: 'rekening', label: 'Rekening bank' },
+  { key: 'tunai', label: 'Cash' },
+  { key: 'rekening', label: 'Bank account' },
   { key: 'ewallet', label: 'E-wallet' },
-  { key: 'lainnya', label: 'Lainnya' },
+  { key: 'lainnya', label: 'Other' },
 ];
 
-// Kelas likuiditas untuk dashboard risiko.
+// Liquidity classes for the risk dashboard (keys are stored data).
 export const LIQUIDITY = Object.freeze({
-  FAST: 'cepat', // dapat dicairkan dalam <= 2 hari kerja
-  MONTH: 'bulan', // <= 1 bulan
-  LONG: 'panjang', // > 1 bulan / menunggu jatuh tempo
+  FAST: 'cepat', // can be cashed out within 2 business days
+  MONTH: 'bulan', // within 1 month
+  LONG: 'panjang', // more than 1 month / waits for maturity
 });
 
 export const LIQUIDITY_LABELS = {
-  [LIQUIDITY.FAST]: '≤ 2 hari kerja',
-  [LIQUIDITY.MONTH]: '≤ 1 bulan',
-  [LIQUIDITY.LONG]: '> 1 bulan',
+  [LIQUIDITY.FAST]: '≤ 2 business days',
+  [LIQUIDITY.MONTH]: '≤ 1 month',
+  [LIQUIDITY.LONG]: '> 1 month',
 };
 
 export const SCHEMA_VERSION = 1;

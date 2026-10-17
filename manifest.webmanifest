@@ -1,8 +1,8 @@
 {
   "name": "Neraca",
   "short_name": "Neraca",
-  "description": "Catatan keuangan pribadi: pemasukan, pengeluaran, sedekah, dan investasi.",
-  "lang": "id",
+  "description": "Personal finance records: income, expenses, giving, and investments.",
+  "lang": "en",
   "start_url": "./#/",
   "scope": "./",
   "display": "standalone",

@@ -33,7 +33,7 @@ export async function setSetting(db, key, value) {
 
 function feeCategoryId(snapshot) {
   const exp = snapshot.categories.filter((c) => c.type === TX.EXPENSE && !c.parentId);
-  return (exp.find((c) => /admin/i.test(c.name)) ?? exp.find((c) => /lain/i.test(c.name)) ?? exp[0])?.id ?? null;
+  return (exp.find((c) => /fee|admin/i.test(c.name)) ?? exp.find((c) => /^other$|lain/i.test(c.name)) ?? exp[0])?.id ?? null;
 }
 
 /**
@@ -67,7 +67,7 @@ export async function saveTransaction(db, snapshot, input, { fee = 0 } = {}) {
           amount: fee,
           accountId: tx.accountId,
           categoryId: linked?.categoryId ?? feeCategoryId(snapshot),
-          note: 'Biaya admin transfer',
+          note: 'Transfer fee',
           linkedTo: tx.id,
           updatedAt: at,
         };

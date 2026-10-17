@@ -1,47 +1,47 @@
-// Kategori, subkategori, dan instrumen awal. Semuanya bisa diubah, diurutkan, dan dinonaktifkan di aplikasi.
+// Initial categories, subcategories, and instruments. All of them can be renamed, reordered, and deactivated in the app.
 import { TX, LIQUIDITY, DEFAULT_TYPE_GROUPS, newId } from './model.js';
 
-const CATEGORY_TREE = {
+export const CATEGORY_TREE = {
   [TX.EXPENSE]: [
-    ['Makanan & Minuman', '🍽️', ['Makan di luar', 'Belanja dapur', 'Kopi & jajan']],
-    ['Transportasi', '🚗', ['Bensin', 'Ojek & taksi online', 'Parkir & tol', 'Transportasi umum']],
-    ['Tempat Tinggal & Tagihan', '🏠', ['Listrik', 'Air', 'Internet', 'Pulsa & paket data', 'Sewa']],
-    ['Belanja', '🛍️', ['Pakaian', 'Rumah tangga', 'Elektronik']],
-    ['Kesehatan', '🩺', ['Obat', 'Dokter & klinik', 'Olahraga']],
-    ['Perawatan Diri', '💈', []],
-    ['Hiburan & Rekreasi', '🎬', []],
-    ['Langganan & Layanan', '🔁', []],
-    ['Pendidikan & Pengembangan Diri', '📚', ['Buku', 'Kursus']],
-    ['Hadiah untuk Orang Lain', '🎁', []],
-    ['Biaya Admin Bank', '🏦', []],
-    ['Lainnya', '•', []],
+    ['Food & Beverages', '🍽️', ['Dining out', 'Groceries', 'Coffee & snacks']],
+    ['Transportation', '🚗', ['Fuel', 'Ride-hailing', 'Parking & tolls', 'Public transport']],
+    ['Housing & Bills', '🏠', ['Electricity', 'Water', 'Internet', 'Mobile credit & data', 'Rent']],
+    ['Shopping', '🛍️', ['Clothing', 'Household', 'Electronics']],
+    ['Health & Wellness', '🩺', ['Medicine', 'Doctor & clinic', 'Sports & fitness']],
+    ['Personal Care & Grooming', '💈', []],
+    ['Entertainment & Leisure', '🎬', []],
+    ['Subscriptions & Services', '🔁', []],
+    ['Education & Self-development', '📚', ['Books', 'Courses']],
+    ['Gifts & Presents', '🎁', []],
+    ['Bank Fees', '🏦', []],
+    ['Other', '•', []],
   ],
   [TX.INCOME]: [
-    ['Gaji', '💼', []],
-    ['Bonus & Tunjangan', '⭐', []],
-    ['Hasil Investasi', '📈', ['Bunga', 'Dividen', 'Kupon SBN']],
-    ['Penjualan Barang', '🏷️', []],
-    ['Hadiah Diterima', '🎁', []],
-    ['Lainnya', '•', []],
+    ['Salary', '💼', []],
+    ['Bonus & Allowances', '⭐', []],
+    ['Investment Income', '📈', ['Interest', 'Dividends', 'Bond coupons']],
+    ['Sales of Goods', '🏷️', []],
+    ['Gifts Received', '🎁', []],
+    ['Other', '•', []],
   ],
   [TX.GIVING]: [
-    ['Ibadah & Keagamaan', '🙏', []],
-    ['Donasi Sosial', '🤝', []],
-    ['Bantuan Keluarga', '👪', []],
-    ['Lainnya', '•', []],
+    ['Worship & Religious', '🙏', []],
+    ['Social Donations', '🤝', []],
+    ['Family Support', '👪', []],
+    ['Other', '•', []],
   ],
 };
 
-// Skor 1 (rendah) sampai 5 (tinggi). Asumsi awal untuk didiskusikan, bukan ukuran resmi.
-const INSTRUMENTS = [
-  ['Emas', 3, LIQUIDITY.FAST, 'Fluktuasi harga sedang; ada selisih harga jual-beli; risiko bergantung tempat penyimpanan.'],
-  ['Deposito', 1, LIQUIDITY.LONG, 'Nilai tetap; dijamin LPS hingga Rp2 miliar per bank bila bunga tidak melebihi tingkat penjaminan; penalti jika dicairkan sebelum jatuh tempo.'],
-  ['SBN', 2, LIQUIDITY.LONG, 'Diterbitkan Pemerintah RI; sebagian seri tidak bisa dijual sebelum jatuh tempo.'],
-  ['Reksa Dana Pasar Uang', 2, LIQUIDITY.FAST, 'Fluktuasi rendah; pencairan beberapa hari kerja.'],
-  ['Reksa Dana Pendapatan Tetap', 3, LIQUIDITY.FAST, 'Fluktuasi sedang mengikuti harga obligasi.'],
-  ['Reksa Dana Saham', 5, LIQUIDITY.FAST, 'Fluktuasi tinggi mengikuti pasar saham.'],
-  ['Saham', 5, LIQUIDITY.FAST, 'Fluktuasi tinggi; risiko bergantung emiten; penyelesaian T+2.'],
-  ['Lainnya', 3, LIQUIDITY.MONTH, 'Isi profil risikonya sendiri.'],
+// Score 1 (low) to 5 (high). Initial assumptions for discussion, not an official measure.
+export const INSTRUMENTS = [
+  ['Gold', 3, LIQUIDITY.FAST, 'Moderate price swings; buy-sell spread; risk depends on where it is stored.'],
+  ['Time Deposit (Deposito)', 1, LIQUIDITY.LONG, 'Fixed value; LPS-insured up to Rp2 billion per bank if the rate is within the LPS guarantee rate; penalty for early withdrawal.'],
+  ['Government Bonds (SBN)', 2, LIQUIDITY.LONG, 'Issued by the Government of Indonesia; some series cannot be sold before maturity.'],
+  ['Money Market Fund', 2, LIQUIDITY.FAST, 'Low price swings; redemption takes a few business days.'],
+  ['Fixed Income Fund', 3, LIQUIDITY.FAST, 'Moderate swings following bond prices.'],
+  ['Equity Fund', 5, LIQUIDITY.FAST, 'High swings following the stock market.'],
+  ['Stocks', 5, LIQUIDITY.FAST, 'High swings; risk depends on the issuer; T+2 settlement.'],
+  ['Other', 3, LIQUIDITY.MONTH, 'Set its risk profile yourself.'],
 ];
 
 export function buildSeed() {
@@ -63,6 +63,7 @@ export function buildSeed() {
     instruments,
     settings: [
       { key: 'typeGroups', value: DEFAULT_TYPE_GROUPS.map((g) => ({ ...g })) },
+      { key: 'labelsLang', value: 'en' },
     ],
   };
 }

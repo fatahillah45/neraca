@@ -30,7 +30,7 @@ export function cashEffects(tx) {
     case TX.ADJUSTMENT:
       return [{ accountId: tx.accountId, delta: tx.sign < 0 ? -tx.amount : tx.amount }];
     default:
-      throw new Error(`Jenis transaksi tidak dikenal: ${tx.type}`);
+      throw new Error(`Unknown transaction type: ${tx.type}`);
   }
 }
 
@@ -254,7 +254,7 @@ export function categoryBreakdown(data, type, start, end, parentId = null) {
   return [...acc.values()]
     .map((r) => ({
       ...r,
-      name: r.id === '__none__' ? (parentId ? 'Tanpa subkategori' : 'Tanpa kategori') : names.get(r.id)?.name ?? '(kategori terhapus)',
+      name: r.id === '__none__' ? (parentId ? 'No subcategory' : 'No category') : names.get(r.id)?.name ?? '(deleted category)',
       icon: names.get(r.id)?.icon ?? '',
     }))
     .filter((r) => r.amount !== 0)
@@ -304,13 +304,13 @@ export function portfolioRisk(data, asOf = null) {
   return {
     total,
     weightedScore: rows.reduce((s, r) => s + r.contribution, 0),
-    byInstrument: group((r) => r.instrument?.id ?? '-', (r) => r.instrument?.name ?? 'Tanpa instrumen'),
+    byInstrument: group((r) => r.instrument?.id ?? '-', (r) => r.instrument?.name ?? 'No instrument'),
     contributors: [...rows].sort((a, b) => b.contribution - a.contribution),
     liquidity: [LIQUIDITY.FAST, LIQUIDITY.MONTH, LIQUIDITY.LONG].map((k) => {
       const v = rows.filter((r) => r.liquidity === k).reduce((s, r) => s + r.state.value, 0);
       return { key: k, value: v, share: v / total };
     }),
-    byPlatform: group((r) => (r.state.holding.platform || '').trim().toLowerCase() || '-', (r) => r.state.holding.platform || 'Tanpa platform'),
+    byPlatform: group((r) => (r.state.holding.platform || '').trim().toLowerCase() || '-', (r) => r.state.holding.platform || 'No platform'),
     largestShare: Math.max(...rows.map((r) => r.share)),
   };
 }

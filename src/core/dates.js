@@ -1,14 +1,17 @@
-// Tanggal kalender WIB (Asia/Jakarta, UTC+7, tanpa DST).
-// Semua tanggal transaksi disimpan sebagai string 'YYYY-MM-DD' tanpa jam,
-// sehingga tidak pernah bergeser hari karena konversi zona waktu.
+// Calendar dates in WIB (Asia/Jakarta, UTC+7, no DST).
+// Transaction dates are stored as 'YYYY-MM-DD' strings without a time, so they never shift a day
+// because of time-zone conversion.
 
 export const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
+// Indonesian month abbreviations are used ONLY for the weekly file name convention (e.g. 19okt26-25okt26).
 export const BULAN_SINGKAT = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
-export const BULAN_PANJANG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-// Indeks 0 = Senin.
-export const HARI_SINGKAT = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-export const HARI_PANJANG = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
+export const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+// Index 0 = Monday.
+export const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export const DAY_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -22,7 +25,7 @@ export function isIsoDate(s) {
 }
 
 export function parts(iso) {
-  if (!isIsoDate(iso)) throw new Error(`Tanggal tidak valid: ${iso}`);
+  if (!isIsoDate(iso)) throw new Error(`Invalid date: ${iso}`);
   return { y: Number(iso.slice(0, 4)), m: Number(iso.slice(5, 7)), d: Number(iso.slice(8, 10)) };
 }
 
@@ -39,39 +42,38 @@ export function daysInMonth(y, m) {
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
 }
 
-/** Tanggal hari ini menurut WIB. */
+/** Today's date in WIB. */
 export function todayWib(now = new Date()) {
   return new Date(now.getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10);
 }
 
-/** Jam dan tanggal WIB untuk dicetak, mis. '26 Okt 2026 08.05 WIB'. */
+/** WIB date and time for printing, e.g. '26 Oct 2026 08:05 WIB'. */
 export function formatTimestampWib(now = new Date()) {
-  const w = new Date(now.getTime() + WIB_OFFSET_MS);
-  const iso = w.toISOString();
+  const iso = new Date(now.getTime() + WIB_OFFSET_MS).toISOString();
   const { y, m, d } = parts(iso.slice(0, 10));
-  return `${d} ${capital(BULAN_SINGKAT[m - 1])} ${y} ${iso.slice(11, 13)}.${iso.slice(14, 16)} WIB`;
+  return `${d} ${MONTH_SHORT[m - 1]} ${y} ${iso.slice(11, 13)}:${iso.slice(14, 16)} WIB`;
 }
 
 export function addDays(iso, n) {
   return fromUtcMs(toUtcMs(iso) + n * 86400000);
 }
 
-/** Selisih hari kalender b - a. */
+/** Calendar days b - a. */
 export function diffDays(a, b) {
   return Math.round((toUtcMs(b) - toUtcMs(a)) / 86400000);
 }
 
-/** Jumlah hari kalender dari a sampai b, inklusif. */
+/** Number of calendar days from a to b, inclusive. */
 export function countDaysInclusive(a, b) {
   return diffDays(a, b) + 1;
 }
 
-/** 0 = Senin ... 6 = Minggu. */
+/** 0 = Monday ... 6 = Sunday. */
 export function weekdayIndex(iso) {
   return (new Date(toUtcMs(iso)).getUTCDay() + 6) % 7;
 }
 
-/** Senin dari minggu yang memuat tanggal ini. */
+/** Monday of the week containing this date. */
 export function weekStart(iso) {
   return addDays(iso, -weekdayIndex(iso));
 }
@@ -85,34 +87,34 @@ function ddmmmyy(iso) {
   return `${String(d).padStart(2, '0')}${BULAN_SINGKAT[m - 1]}${String(y % 100).padStart(2, '0')}`;
 }
 
-/** Nama file mingguan tanpa ekstensi, mis. '19okt26-25okt26'. */
+/** Weekly file name without extension, e.g. '19okt26-25okt26' (Indonesian months, as specified by the owner). */
 export function weekFileBase(monday) {
-  if (weekdayIndex(monday) !== 0) throw new Error(`Bukan hari Senin: ${monday}`);
+  if (weekdayIndex(monday) !== 0) throw new Error(`Not a Monday: ${monday}`);
   return `${ddmmmyy(monday)}-${ddmmmyy(addDays(monday, 6))}`;
 }
 
-/** Saran subfolder di laptop berdasarkan bulan hari Senin, mis. '2026/10'. */
+/** Suggested laptop subfolder based on the Monday's month, e.g. '2026/10'. */
 export function weekFolderHint(monday) {
   const { y, m } = parts(monday);
   return `${y}/${String(m).padStart(2, '0')}`;
 }
 
-/** Nama sheet harian, mis. 'Sen 19okt'. */
+/** Daily sheet name, e.g. 'Mon 19 Oct'. */
 export function daySheetName(iso) {
   const { m, d } = parts(iso);
-  return `${HARI_SINGKAT[weekdayIndex(iso)]} ${String(d).padStart(2, '0')}${BULAN_SINGKAT[m - 1]}`;
+  return `${DAY_SHORT[weekdayIndex(iso)]} ${String(d).padStart(2, '0')} ${MONTH_SHORT[m - 1]}`;
 }
 
-/** Judul panjang, mis. 'Senin, 19 Oktober 2026'. */
+/** Long title, e.g. 'Monday, 19 October 2026'. */
 export function formatLongDate(iso) {
   const { y, m, d } = parts(iso);
-  return `${HARI_PANJANG[weekdayIndex(iso)]}, ${d} ${BULAN_PANJANG[m - 1]} ${y}`;
+  return `${DAY_LONG[weekdayIndex(iso)]}, ${d} ${MONTH_LONG[m - 1]} ${y}`;
 }
 
-/** Tanggal pendek, mis. '19 Okt 2026'. */
+/** Short date, e.g. '19 Oct 2026'. */
 export function formatShortDate(iso) {
   const { y, m, d } = parts(iso);
-  return `${d} ${capital(BULAN_SINGKAT[m - 1])} ${y}`;
+  return `${d} ${MONTH_SHORT[m - 1]} ${y}`;
 }
 
 export function monthRange(y, m) {
@@ -126,7 +128,7 @@ export function addMonths(y, m, n) {
 }
 
 export function formatMonthLabel(y, m) {
-  return `${BULAN_PANJANG[m - 1]} ${y}`;
+  return `${MONTH_LONG[m - 1]} ${y}`;
 }
 
 export function compareIso(a, b) {
@@ -139,8 +141,4 @@ export function minIso(a, b) {
 
 export function maxIso(a, b) {
   return a >= b ? a : b;
-}
-
-function capital(s) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }

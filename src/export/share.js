@@ -1,5 +1,5 @@
-// Membagikan atau mengunduh file dari HP. Chrome Android hanya mengizinkan jenis file tertentu lewat
-// menu Bagikan, jadi aplikasi memeriksa navigator.canShare dan selalu menyediakan Unduh sebagai cadangan.
+// Share or download a file from the phone. Chrome only allows some file types in the share sheet,
+// so the app checks navigator.canShare and always offers Download as a fallback.
 
 export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -10,7 +10,7 @@ export function loadExcelJS() {
     const s = document.createElement('script');
     s.src = 'vendor/exceljs.min.js';
     s.onload = () => resolve(globalThis.ExcelJS);
-    s.onerror = () => { excelPromise = null; reject(new Error('Gagal memuat pembuat Excel.')); };
+    s.onerror = () => { excelPromise = null; reject(new Error('Could not load the Excel builder.')); };
     document.head.appendChild(s);
   });
   return excelPromise;

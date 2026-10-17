@@ -1,6 +1,6 @@
-// Service worker: aplikasi tetap terbuka tanpa internet. Tidak ada data keuangan yang lewat sini;
-// hanya file aplikasi (kode, gaya, ikon) yang disimpan di cache.
-const VERSION = 'neraca-v0.1.0';
+// Service worker: keeps the app usable offline. No financial data passes through here;
+// only app files (code, styles, icons) are cached.
+const VERSION = 'neraca-v0.2.0';
 const PRECACHE = [
   './',
   'index.html',
@@ -15,8 +15,10 @@ const PRECACHE = [
   'src/core/model.js',
   'src/core/money.js',
   'src/core/seed.js',
+  'src/core/translate.js',
   'src/core/validate.js',
   'src/db/db.js',
+  'src/db/migrate.js',
   'src/db/repo.js',
   'src/export/backup.js',
   'src/export/share.js',
@@ -36,7 +38,12 @@ const PRECACHE = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(VERSION).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
+  // cache: 'reload' bypasses the HTTP cache so a new version never stores stale files.
+  event.waitUntil(
+    caches.open(VERSION)
+      .then((c) => c.addAll(PRECACHE.map((u) => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -47,7 +54,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Cache dulu (cepat dan bisa offline), sambil memperbarui cache dari jaringan di latar belakang.
+// Cache first (fast and offline), while refreshing the cache from the network in the background.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;

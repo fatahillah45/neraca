@@ -13,7 +13,7 @@ function readLast() {
   try { return JSON.parse(localStorage.getItem(LAST_KEY)) ?? {}; } catch { return {}; }
 }
 function writeLast(v) {
-  try { localStorage.setItem(LAST_KEY, JSON.stringify(v)); } catch { /* opsional */ }
+  try { localStorage.setItem(LAST_KEY, JSON.stringify(v)); } catch { /* optional convenience */ }
 }
 
 const GROUP_TYPE = { [GROUP.INCOME]: TX.INCOME, [GROUP.EXPENSE]: TX.EXPENSE, [GROUP.GIVING]: TX.GIVING, [GROUP.TRANSFER]: TX.TRANSFER, [GROUP.ADJUSTMENT]: TX.ADJUSTMENT };
@@ -31,7 +31,7 @@ export function TxForm({ initial, preset, onClose }) {
 
   const [group, setGroup] = useState(startGroup);
   const [amount, setAmount] = useState(initial?.type === TX.ADJUSTMENT ? null : initial?.amount ?? null);
-  const [pad, setPad] = useState(initial ? null : 'amount'); // field yang sedang diisi keypad: 'amount' | 'fee' | null
+  const [pad, setPad] = useState(initial ? null : 'amount'); // field the keypad is filling: 'amount' | 'fee' | null
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? null);
   const [subcategoryId, setSubcategoryId] = useState(initial?.subcategoryId ?? null);
   const [accountId, setAccountId] = useState(initial?.accountId ?? defaultAccount(startGroup));
@@ -54,7 +54,7 @@ export function TxForm({ initial, preset, onClose }) {
 
   const type = group === GROUP.INVEST ? (investAction === 'sell' ? TX.INVEST_SELL : TX.INVEST_BUY) : GROUP_TYPE[group];
 
-  // Kategori diurutkan dari yang paling sering dipakai 90 hari terakhir.
+  // Categories sorted by how often they were used in the last 90 days.
   const cats = useMemo(() => {
     if (![TX.INCOME, TX.EXPENSE, TX.GIVING].includes(type)) return [];
     const since = addDays(today, -90);
@@ -109,7 +109,7 @@ export function TxForm({ initial, preset, onClose }) {
   async function submit(again) {
     if (busy) return;
     if (type === TX.ADJUSTMENT && (adjustTarget === null || adjustTarget === currentBalance)) {
-      setErrors({ amount: adjustTarget === null ? 'Isi saldo sebenarnya menurut bank.' : 'Saldo sudah sama, tidak perlu penyesuaian.' });
+      setErrors({ amount: adjustTarget === null ? 'Enter the actual balance from your bank.' : 'The balance already matches; no adjustment needed.' });
       return;
     }
     const tx = buildTx();
@@ -120,7 +120,7 @@ export function TxForm({ initial, preset, onClose }) {
       return;
     }
     if (v.warnings.length) {
-      const ok = await app.confirm({ title: 'Periksa dulu', body: v.warnings.map((w) => `• ${w.message}`).join('\n'), confirm: 'Simpan saja' });
+      const ok = await app.confirm({ title: 'Please check', body: v.warnings.map((w) => `• ${w.message}`).join('\n'), confirm: 'Save anyway' });
       if (!ok) return;
     }
     setBusy(true);
@@ -128,8 +128,8 @@ export function TxForm({ initial, preset, onClose }) {
       const saved = await saveTransaction(db, snap, tx, { fee: type === TX.TRANSFER ? fee ?? 0 : 0 });
       writeLast({ ...last, group, account: { ...(last.account ?? {}), [group]: accountId } });
       await app.refresh();
-      app.toast(editing ? 'Perubahan disimpan.' : `Tersimpan: ${formatRp(saved.amount)}`, editing ? null : {
-        label: 'Urungkan', run: async () => { await deleteTransaction(db, saved.id); await app.refresh(); },
+      app.toast(editing ? 'Changes saved.' : `Saved: ${formatRp(saved.amount)}`, editing ? null : {
+        label: 'Undo', run: async () => { await deleteTransaction(db, saved.id); await app.refresh(); },
       }, 8000);
       if (again) {
         setAmount(null); setNote(''); setSubcategoryId(null); setIsRefund(false); setUnits(''); setUnitPrice(''); setFee(null);
@@ -141,11 +141,11 @@ export function TxForm({ initial, preset, onClose }) {
   }
 
   async function remove() {
-    const ok = await app.confirm({ title: 'Hapus transaksi ini?', body: 'Transaksi masuk Sampah dan bisa dipulihkan selama 30 hari.', confirm: 'Hapus', danger: true });
+    const ok = await app.confirm({ title: 'Delete this transaction?', body: 'It goes to Trash and can be restored for 30 days.', confirm: 'Delete', danger: true });
     if (!ok) return;
     await deleteTransaction(db, initial.id);
     await app.refresh();
-    app.toast('Transaksi dihapus.', { label: 'Urungkan', run: async () => { await restoreTransaction(db, initial.id); await app.refresh(); } });
+    app.toast('Transaction deleted.', { label: 'Undo', run: async () => { await restoreTransaction(db, initial.id); await app.refresh(); } });
     onClose();
   }
 
@@ -166,25 +166,25 @@ export function TxForm({ initial, preset, onClose }) {
   const visibleGroups = typeGroups.filter((g) => !g.hidden || g.key === group);
   const accountChips = (value, onPick, exclude) => html`<div class="chips">
     ${accounts.filter((a) => a.id !== exclude).map((a) => html`<button class=${`chip ${value === a.id ? 'on' : ''}`} onClick=${() => onPick(a.id)}>${a.name}</button>`)}
-    ${accounts.length === 0 && html`<a class="chip add" href="#/lainnya/akun" onClick=${onClose}>+ Tambah akun dulu</a>`}
+    ${accounts.length === 0 && html`<a class="chip add" href="#/more/accounts" onClick=${onClose}>+ Add an account first</a>`}
   </div>`;
   const err = (f) => errors[f] && html`<div class="err">${errors[f]}</div>`;
-  const amountLabel = type === TX.ADJUSTMENT ? 'Saldo sebenarnya' : type === TX.INVEST_SELL ? 'Jumlah diterima' : 'Jumlah';
+  const amountLabel = type === TX.ADJUSTMENT ? 'Actual balance' : type === TX.INVEST_SELL ? 'Amount received' : 'Amount';
 
-  return html`<div class="sheet" role="dialog" aria-label="Form transaksi">
+  return html`<div class="sheet" role="dialog" aria-label="Transaction form">
     <div class="sheet-head">
-      <button class="iconbtn" aria-label="Tutup" onClick=${onClose}>${Icon.close()}</button>
-      <h2>${editing ? 'Ubah transaksi' : 'Tambah transaksi'}</h2>
-      ${editing && html`<button class="btn danger" onClick=${remove}>Hapus</button>`}
+      <button class="iconbtn" aria-label="Close" onClick=${onClose}>${Icon.close()}</button>
+      <h2>${editing ? 'Edit transaction' : 'Add transaction'}</h2>
+      ${editing && html`<button class="btn danger" onClick=${remove}>Delete</button>`}
     </div>
     <div class="sheet-body">
-      <div class="chips" role="tablist" aria-label="Jenis">
+      <div class="chips" role="tablist" aria-label="Type">
         ${visibleGroups.map((g) => html`<button class=${`chip ${group === g.key ? 'on' : ''}`} onClick=${() => switchGroup(g.key)}>${g.label}</button>`)}
       </div>
 
       ${group === GROUP.INVEST && html`<div class="seg" style="margin:6px 0">
-        <button class=${investAction === 'buy' ? 'on' : ''} onClick=${() => setInvestAction('buy')}>Beli / tambah</button>
-        <button class=${investAction === 'sell' ? 'on' : ''} onClick=${() => setInvestAction('sell')}>Cairkan / jual</button>
+        <button class=${investAction === 'buy' ? 'on' : ''} onClick=${() => setInvestAction('buy')}>Buy / add</button>
+        <button class=${investAction === 'sell' ? 'on' : ''} onClick=${() => setInvestAction('sell')}>Cash out / sell</button>
       </div>`}
 
       <div class=${`amount ${pad === 'amount' ? 'focus' : ''}`} onClick=${() => setPad('amount')}>
@@ -193,80 +193,80 @@ export function TxForm({ initial, preset, onClose }) {
       </div>
       ${err('amount')}
       ${type === TX.ADJUSTMENT && accountId && html`<div class="small muted" style="margin-top:6px">
-        Saldo di aplikasi per ${formatShortDate(date)}: <b class="num">${formatRp(currentBalance)}</b>
-        ${adjustTarget !== null && html` · Selisih: <b class="num">${formatRp(adjustTarget - currentBalance)}</b>`}
+        Balance in the app on ${formatShortDate(date)}: <b class="num">${formatRp(currentBalance)}</b>
+        ${adjustTarget !== null && html` · Difference: <b class="num">${formatRp(adjustTarget - currentBalance)}</b>`}
       </div>`}
 
       ${[TX.INCOME, TX.EXPENSE, TX.GIVING].includes(type) && html`
-        <div class="section-label">Kategori</div>
+        <div class="section-label">Category</div>
         <div class="catgrid">
           ${cats.map((c) => html`<button class=${`cat ${categoryId === c.id ? 'on' : ''}`} onClick=${() => { setCategoryId(c.id); setSubcategoryId(null); setPad(null); }}>
             <span class="ic">${c.icon || '•'}</span><span class="nm">${c.name}</span></button>`)}
         </div>
         ${err('categoryId')}
-        ${subs.length > 0 && html`<div class="section-label">Subkategori (opsional)</div>
+        ${subs.length > 0 && html`<div class="section-label">Subcategory (optional)</div>
           <div class="chips wrap">${subs.map((s) => html`<button class=${`chip ${subcategoryId === s.id ? 'on' : ''}`} onClick=${() => setSubcategoryId(subcategoryId === s.id ? null : s.id)}>${s.name}</button>`)}</div>
           ${err('subcategoryId')}`}
         ${type === TX.EXPENSE && html`<label class="row" style="margin-top:12px;min-height:44px">
           <input type="checkbox" checked=${isRefund} onChange=${(e) => setIsRefund(e.target.checked)} style="width:22px;height:22px" />
-          <span>Ini refund (uang kembali), mengurangi pengeluaran kategori ini</span></label>`}`}
+          <span>This is a refund (money back); it reduces spending in this category</span></label>`}`}
 
       ${group === GROUP.INVEST && html`
-        <div class="section-label">Instrumen</div>
+        <div class="section-label">Instrument</div>
         <div class="chips">${instruments.map((i) => html`<button class=${`chip ${instrumentId === i.id ? 'on' : ''}`} onClick=${() => { setInstrumentId(i.id); setHoldingId(null); setPad(null); }}>${i.name}</button>`)}</div>
-        ${instrumentId && html`<div class="section-label">Posisi</div>
+        ${instrumentId && html`<div class="section-label">Holding</div>
           <div class="chips wrap">
             ${holdings.map((h) => html`<button class=${`chip ${holdingId === h.id ? 'on' : ''}`} onClick=${() => setHoldingId(h.id)}>${h.name}${h.platform ? ` · ${h.platform}` : ''}</button>`)}
-            <button class="chip add" onClick=${() => setNewHolding({ name: '', platform: '' })}>+ Posisi baru</button>
+            <button class="chip add" onClick=${() => setNewHolding({ name: '', platform: '' })}>+ New holding</button>
           </div>
           ${newHolding && html`<div class="card" style="margin-top:8px">
-            <div class="field"><label>Nama posisi</label><input class="input" placeholder="mis. Emas Antam" value=${newHolding.name} onInput=${(e) => setNewHolding({ ...newHolding, name: e.target.value })} /></div>
-            <div class="field"><label>Platform / tempat (opsional)</label><input class="input" placeholder="mis. Pegadaian, Bibit, Bank X" value=${newHolding.platform} onInput=${(e) => setNewHolding({ ...newHolding, platform: e.target.value })} /></div>
-            <div class="row"><button class="btn grow" onClick=${() => setNewHolding(null)}>Batal</button><button class="btn primary grow" onClick=${createHolding}>Buat posisi</button></div>
+            <div class="field"><label>Holding name</label><input class="input" placeholder="e.g. Antam Gold" value=${newHolding.name} onInput=${(e) => setNewHolding({ ...newHolding, name: e.target.value })} /></div>
+            <div class="field"><label>Platform / place (optional)</label><input class="input" placeholder="e.g. Pegadaian, Bibit, Bank X" value=${newHolding.platform} onInput=${(e) => setNewHolding({ ...newHolding, platform: e.target.value })} /></div>
+            <div class="row"><button class="btn grow" onClick=${() => setNewHolding(null)}>Cancel</button><button class="btn primary grow" onClick=${createHolding}>Create holding</button></div>
           </div>`}`}
         ${err('holdingId')}
-        ${type === TX.INVEST_SELL && holdingId && html`<div class="small muted" style="margin-top:6px">Modal tersisa di posisi ini: <b class="num">${formatRp(holdingCost)}</b></div>`}
+        ${type === TX.INVEST_SELL && holdingId && html`<div class="small muted" style="margin-top:6px">Remaining cost in this holding: <b class="num">${formatRp(holdingCost)}</b></div>`}
         ${type === TX.INVEST_SELL && html`<label class="row" style="margin-top:8px;min-height:44px">
           <input type="checkbox" checked=${closePosition} onChange=${(e) => setClosePosition(e.target.checked)} style="width:22px;height:22px" />
-          <span>Tutup posisi (semua dicairkan, mis. deposito jatuh tempo)</span></label>`}
-        <button class="link small" onClick=${() => setShowDetail(!showDetail)}>${showDetail ? 'Sembunyikan detail opsional' : 'Detail opsional: unit dan harga per unit'}</button>
+          <span>Close the holding (everything cashed out, e.g. a matured deposit)</span></label>`}
+        <button class="link small" onClick=${() => setShowDetail(!showDetail)}>${showDetail ? 'Hide optional details' : 'Optional details: units and unit price'}</button>
         ${showDetail && html`<div class="grid2">
-          <div class="field"><label>Unit / gram</label><input class="input num" inputmode="decimal" value=${units} onInput=${(e) => setUnits(e.target.value)} /></div>
-          <div class="field"><label>Harga per unit (Rp)</label><input class="input num" inputmode="numeric" value=${unitPrice} onInput=${(e) => setUnitPrice(e.target.value)} /></div>
+          <div class="field"><label>Units / grams</label><input class="input num" inputmode="decimal" value=${units} onInput=${(e) => setUnits(e.target.value)} /></div>
+          <div class="field"><label>Unit price (Rp)</label><input class="input num" inputmode="numeric" value=${unitPrice} onInput=${(e) => setUnitPrice(e.target.value)} /></div>
         </div>`}`}
 
-      <div class="section-label">${type === TX.TRANSFER ? 'Dari akun' : type === TX.INVEST_SELL ? 'Masuk ke akun' : type === TX.INVEST_BUY ? 'Dibayar dari akun' : 'Akun'}</div>
+      <div class="section-label">${type === TX.TRANSFER ? 'From account' : type === TX.INVEST_SELL ? 'Into account' : type === TX.INVEST_BUY ? 'Paid from account' : 'Account'}</div>
       ${accountChips(accountId, setAccountId, null)}
       ${err('accountId')}
       ${type === TX.TRANSFER && html`
-        <div class="section-label">Ke akun</div>
+        <div class="section-label">To account</div>
         ${accountChips(toAccountId, setToAccountId, accountId)}
         ${err('toAccountId')}
         <div class=${`amount ${pad === 'fee' ? 'focus' : ''}`} style="min-height:52px" onClick=${() => setPad('fee')}>
-          <span class="muted small grow" style="align-self:center">Biaya admin (opsional)</span>
+          <span class="muted small grow" style="align-self:center">Transfer fee (optional)</span>
           <span class="cur">Rp</span><span class="num" style="font-size:22px;font-weight:650">${fee ? formatNumber(fee) : '0'}</span>
         </div>`}
 
-      <div class="section-label">Tanggal</div>
+      <div class="section-label">Date</div>
       <div class="chips">
-        <button class=${`chip ${date === today ? 'on' : ''}`} onClick=${() => setDate(today)}>Hari ini</button>
-        <button class=${`chip ${date === addDays(today, -1) ? 'on' : ''}`} onClick=${() => setDate(addDays(today, -1))}>Kemarin</button>
+        <button class=${`chip ${date === today ? 'on' : ''}`} onClick=${() => setDate(today)}>Today</button>
+        <button class=${`chip ${date === addDays(today, -1) ? 'on' : ''}`} onClick=${() => setDate(addDays(today, -1))}>Yesterday</button>
         <input class="input" type="date" style="width:auto;min-height:40px;padding:6px 10px" value=${date} onInput=${(e) => e.target.value && setDate(e.target.value)} />
       </div>
       ${err('date')}
 
-      <div class="field"><label>Catatan (opsional)</label>
-        <input class="input" maxlength="140" placeholder="mis. makan siang dengan tim" value=${note} onFocus=${() => setPad(null)} onInput=${(e) => setNote(e.target.value)} /></div>
+      <div class="field"><label>Note (optional)</label>
+        <input class="input" maxlength="140" placeholder="e.g. lunch with the team" value=${note} onFocus=${() => setPad(null)} onInput=${(e) => setNote(e.target.value)} /></div>
     </div>
 
-    ${pad && html`<div class="keypad" role="group" aria-label="Keypad angka">
+    ${pad && html`<div class="keypad" role="group" aria-label="Number keypad">
       ${['1', '2', '3', '4', '5', '6', '7', '8', '9', '000', '0', 'del'].map((k) => html`
-        <button onClick=${() => press(k)} aria-label=${k === 'del' ? 'Hapus angka' : k}>${k === 'del' ? '⌫' : k}</button>`)}
-      <button class="done" style="grid-column: span 3" onClick=${() => setPad(null)}>Selesai</button>
+        <button onClick=${() => press(k)} aria-label=${k === 'del' ? 'Delete digit' : k}>${k === 'del' ? '⌫' : k}</button>`)}
+      <button class="done" style="grid-column: span 3" onClick=${() => setPad(null)}>Done</button>
     </div>`}
     ${!pad && html`<div class="sheet-foot">
-      ${!editing && html`<button class="btn grow" disabled=${busy} onClick=${() => submit(true)}>Simpan & tambah</button>`}
-      <button class="btn primary grow" disabled=${busy} onClick=${() => submit(false)}>Simpan</button>
+      ${!editing && html`<button class="btn grow" disabled=${busy} onClick=${() => submit(true)}>Save & add</button>`}
+      <button class="btn primary grow" disabled=${busy} onClick=${() => submit(false)}>Save</button>
     </div>`}
   </div>`;
 }
