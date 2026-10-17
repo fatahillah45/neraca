@@ -30,7 +30,7 @@ const days = weekDates(monday);
 const expected = {
   weeklyFile: weekly.fileName,
   allFile: all.fileName,
-  sheets: ['Ringkasan', ...days.map(daySheetName)],
+  sheets: ['Summary', ...days.map(daySheetName)],
   dayColumns: DAY_COLUMNS,
   allColumns: ALL_COLUMNS,
   days: days.map((d) => {

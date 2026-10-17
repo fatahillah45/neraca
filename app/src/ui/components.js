@@ -15,14 +15,14 @@ export const Icon = {
   chevron: () => html`<svg viewBox="0 0 24 24" width="18" height="18">${path('M9 5l7 7-7 7')}</svg>`,
 };
 
-/** Donut dari segmen {label, value, color}. Ketuk segmen atau baris legenda memanggil onSelect(i). */
+/** Donut from segments {label, value, color}. Tapping a segment calls onSelect(i). */
 export function Donut({ segments, size = 180, thickness = 26, center, sub, onSelect }) {
   const total = segments.reduce((s, x) => s + Math.max(0, x.value), 0);
   const r = (size - thickness) / 2;
   const c = 2 * Math.PI * r;
   let offset = 0;
   return html`
-    <svg viewBox="0 0 ${size} ${size}" width=${size} height=${size} role="img" aria-label=${center ?? 'Diagram donat'}>
+    <svg viewBox="0 0 ${size} ${size}" width=${size} height=${size} role="img" aria-label=${center ?? 'Donut chart'}>
       <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke="var(--surface-2)" stroke-width=${thickness} />
       ${total > 0 && segments.map((s, i) => {
         const len = (Math.max(0, s.value) / total) * c;
@@ -39,7 +39,7 @@ export function Donut({ segments, size = 180, thickness = 26, center, sub, onSel
     </svg>`;
 }
 
-/** Batang berkelompok per bulan. series: [{key, label, color}], rows: [{label, [key]: number}]. */
+/** Grouped bars per month. series: [{key, label, color}], rows: [{label, [key]: number}]. */
 export function Bars({ rows, series, height = 170, onSelect }) {
   const W = 340;
   const padL = 44;
@@ -52,7 +52,7 @@ export function Bars({ rows, series, height = 170, onSelect }) {
   const y = (v) => 8 + plotH - (Math.max(0, v) / nice) * plotH;
   const ticks = [0, nice / 2, nice];
   return html`
-    <svg viewBox="0 0 ${W} ${height}" width="100%" role="img" aria-label="Tren bulanan">
+    <svg viewBox="0 0 ${W} ${height}" width="100%" role="img" aria-label="Monthly trend">
       ${ticks.map((t) => html`
         <line x1=${padL} x2=${W} y1=${y(t)} y2=${y(t)} stroke="var(--border)" stroke-dasharray=${t === 0 ? '' : '3 4'} />
         <text x=${padL - 6} y=${y(t) + 4} text-anchor="end" font-size="10" fill="var(--text-3)">${formatCompact(t).replace('Rp', '')}</text>`)}
@@ -100,7 +100,7 @@ export function Toast({ toast, onClose }) {
   </div>`;
 }
 
-/** Dialog konfirmasi sederhana. options: {title, body, confirm, danger} */
+/** Simple confirm dialog. options: {title, body, confirm, danger} */
 export function ConfirmDialog({ dialog, onClose }) {
   if (!dialog) return null;
   return html`<div class="dialog-back" onClick=${() => onClose(false)}>
@@ -108,8 +108,8 @@ export function ConfirmDialog({ dialog, onClose }) {
       <h3>${dialog.title}</h3>
       ${dialog.body && html`<div class="muted" style="white-space:pre-line">${dialog.body}</div>`}
       <div class="row" style="margin-top:16px">
-        <button class="btn grow" onClick=${() => onClose(false)}>${dialog.cancel ?? 'Batal'}</button>
-        <button class=${`btn grow ${dialog.danger ? 'danger' : 'primary'}`} onClick=${() => onClose(true)}>${dialog.confirm ?? 'Lanjut'}</button>
+        <button class="btn grow" onClick=${() => onClose(false)}>${dialog.cancel ?? 'Cancel'}</button>
+        <button class=${`btn grow ${dialog.danger ? 'danger' : 'primary'}`} onClick=${() => onClose(true)}>${dialog.confirm ?? 'Continue'}</button>
       </div>
     </div>
   </div>`;

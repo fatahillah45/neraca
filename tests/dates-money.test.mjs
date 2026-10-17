@@ -16,7 +16,7 @@ test('minggu lintas tahun dan bulan Agustus memakai singkatan agu', () => {
   assert.equal(weekFileBase('2026-12-28'), '28des26-03jan27');
   assert.equal(weekFileBase('2026-08-03'), '03agu26-09agu26');
   assert.equal(weekFolderHint('2026-10-26'), '2026/10');
-  assert.throws(() => weekFileBase('2026-10-20'), /Bukan hari Senin/);
+  assert.throws(() => weekFileBase('2026-10-20'), /Not a Monday/);
 });
 
 test('weekStart: Minggu ikut minggu yang dimulai Senin sebelumnya', () => {
@@ -25,10 +25,10 @@ test('weekStart: Minggu ikut minggu yang dimulai Senin sebelumnya', () => {
   assert.equal(weekStart('2027-01-01'), '2026-12-28');
 });
 
-test('nama sheet dan judul hari dalam bahasa Indonesia', () => {
-  assert.equal(daySheetName('2026-10-19'), 'Sen 19okt');
-  assert.equal(daySheetName('2026-11-01'), 'Min 01nov');
-  assert.equal(formatLongDate('2026-10-25'), 'Minggu, 25 Oktober 2026');
+test('sheet names and day titles in English', () => {
+  assert.equal(daySheetName('2026-10-19'), 'Mon 19 Oct');
+  assert.equal(daySheetName('2026-11-01'), 'Sun 01 Nov');
+  assert.equal(formatLongDate('2026-10-25'), 'Sunday, 25 October 2026');
 });
 
 test('hari ini menurut WIB berganti pada pukul 00.00 WIB (17.00 UTC)', () => {
@@ -50,14 +50,15 @@ test('jumlah hari kalender inklusif', () => {
   assert.deepEqual(monthRange(2028, 2), { start: '2028-02-01', end: '2028-02-29' });
 });
 
-test('format Rupiah dan singkatan Indonesia', () => {
+test('Rupiah format and compact amounts like the reference app', () => {
   assert.equal(formatRp(1234567), 'Rp1.234.567');
   assert.equal(formatRp(-5000), '-Rp5.000');
   assert.equal(formatRp(0), 'Rp0');
-  assert.equal(formatCompact(232054), 'Rp232 rb');
-  assert.equal(formatCompact(9_000_000), 'Rp9,0 jt');
-  assert.equal(formatCompact(1_250_000_000), 'Rp1,3 M');
-  assert.equal(formatPercent(0.37378), '37,4%');
+  assert.equal(formatCompact(232054), 'Rp232K');
+  assert.equal(formatCompact(9_000_000), 'Rp9.0M');
+  assert.equal(formatCompact(1_250_000_000), 'Rp1.3B');
+  assert.equal(formatPercent(0.37378), '37.4%');
+  assert.equal(formatPercent(-94.3), '< -1000%');
   assert.equal(formatPercent(null), '—');
 });
 

@@ -64,6 +64,6 @@ test('akun: saldo awal tidak boleh sesudah transaksi pertamanya; nama unik', () 
   const d = sampleWeek();
   const acc = { ...d.accounts[0], openingDate: '2026-10-20' };
   assert.equal(validateAccount(acc, d).ok, false);
-  assert.equal(validateName('rekening gaji (uji)', d.accounts, 'lain'), 'Nama ini sudah dipakai.');
-  assert.equal(validateName('  ', d.accounts), 'Nama wajib diisi.');
+  assert.equal(validateName('rekening gaji (uji)', d.accounts, 'lain'), 'This name is already used.');
+  assert.equal(validateName('  ', d.accounts), 'Name is required.');
 });

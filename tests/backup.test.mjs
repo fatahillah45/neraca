@@ -34,9 +34,15 @@ test('referensi rusak terdeteksi walau checksum dihitung ulang', async () => {
   d.transactions[0].accountId = 'tidak-ada';
   const r = await parseBackup(await serializeBackup(d, { now }));
   assert.equal(r.ok, false);
-  assert.match(r.errors.join(' '), /merujuk/);
+  assert.match(r.errors.join(' '), /refer to a missing/);
 });
 
-test('nama file cadangan memakai tanggal dan jam WIB', () => {
-  assert.equal(backupFileName(new Date('2026-10-25T17:30:00Z')), 'neraca-cadangan-2026-10-26-0030.json');
+test('backup file name uses the WIB date and time', () => {
+  assert.equal(backupFileName(new Date('2026-10-25T17:30:00Z')), 'neraca-backup-2026-10-26-0030.json');
+});
+
+test('backups made by v0.1 (format neraca-cadangan) can still be restored', async () => {
+  const doc = JSON.parse(await serializeBackup(sampleWeek(), { now }));
+  doc.format = 'neraca-cadangan';
+  assert.equal((await parseBackup(JSON.stringify(doc))).ok, true);
 });

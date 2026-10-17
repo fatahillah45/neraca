@@ -1,7 +1,9 @@
-// Rupiah selalu disimpan sebagai bilangan bulat (tanpa sen) agar tidak ada galat pembulatan.
+// Rupiah amounts are always stored as integers (no cents) to avoid rounding errors.
+// Display follows the reference app: full amounts with dot thousands (Rp11.116.870),
+// compact amounts and percentages with a decimal point (Rp9.0M, 37.4%).
 
-export const MAX_AMOUNT = 1_000_000_000_000_000; // Rp1 kuadriliun, batas aman jauh di bawah Number.MAX_SAFE_INTEGER
-export const LARGE_AMOUNT_CONFIRM = 100_000_000; // di atas Rp100 juta minta konfirmasi
+export const MAX_AMOUNT = 1_000_000_000_000_000; // Rp1 quadrillion, far below Number.MAX_SAFE_INTEGER
+export const LARGE_AMOUNT_CONFIRM = 100_000_000; // ask for confirmation above Rp100 million
 
 export function isValidAmount(n) {
   return Number.isSafeInteger(n) && n > 0 && n <= MAX_AMOUNT;
@@ -18,7 +20,7 @@ export function formatRp(n) {
   return `${sign}Rp${groupThousands(Math.abs(Math.round(n)))}`;
 }
 
-/** Angka tanpa 'Rp', untuk keypad: 150000 -> '150.000'. */
+/** Number without 'Rp', for the keypad: 150000 -> '150.000'. */
 export function formatNumber(n) {
   if (n === null || n === undefined || Number.isNaN(n)) return '';
   const sign = n < 0 ? '-' : '';
@@ -26,35 +28,34 @@ export function formatNumber(n) {
 }
 
 function oneDecimal(x) {
-  const r = Math.round(x * 10) / 10;
-  return (Number.isInteger(r) ? `${r},0` : String(r).replace('.', ','));
+  return (Math.round(x * 10) / 10).toFixed(1);
 }
 
 /**
- * Singkatan Indonesia untuk grafik: rb (ribu), jt (juta), M (miliar), T (triliun).
- * 232054 -> 'Rp232 rb', 9000000 -> 'Rp9,0 jt', 1200000000 -> 'Rp1,2 M'.
+ * Compact amounts for charts: K (thousand), M (million), B (billion), T (trillion).
+ * 232054 -> 'Rp232K', 9000000 -> 'Rp9.0M', 1250000000 -> 'Rp1.3B'.
  */
 export function formatCompact(n) {
   if (n === null || n === undefined || Number.isNaN(n)) return '—';
   const sign = n < 0 ? '-' : '';
   const a = Math.abs(n);
-  if (a >= 1e12) return `${sign}Rp${oneDecimal(a / 1e12)} T`;
-  if (a >= 1e9) return `${sign}Rp${oneDecimal(a / 1e9)} M`;
-  if (a >= 1e6) return `${sign}Rp${oneDecimal(a / 1e6)} jt`;
-  if (a >= 1e3) return `${sign}Rp${Math.round(a / 1e3)} rb`;
+  if (a >= 1e12) return `${sign}Rp${oneDecimal(a / 1e12)}T`;
+  if (a >= 1e9) return `${sign}Rp${oneDecimal(a / 1e9)}B`;
+  if (a >= 1e6) return `${sign}Rp${oneDecimal(a / 1e6)}M`;
+  if (a >= 1e3) return `${sign}Rp${Math.round(a / 1e3)}K`;
   return `${sign}Rp${Math.round(a)}`;
 }
 
-/** Persen dengan satu desimal dan koma: 0.3738 -> '37,4%'. null -> '—'. */
+/** Percentage with one decimal: 0.3738 -> '37.4%'. null -> '—'. */
 export function formatPercent(ratio) {
   if (ratio === null || ratio === undefined || !Number.isFinite(ratio)) return '—';
-  // Rasio ekstrem (mis. awal bulan sebelum gaji masuk) dibatasi agar tetap terbaca.
+  // Extreme ratios (e.g. early in the month before salary arrives) are capped to stay readable.
   if (ratio < -10) return '< -1000%';
   if (ratio > 10) return '> 1000%';
   return `${oneDecimal(ratio * 100)}%`;
 }
 
-/** Ambil hanya digit dari input keypad. '150.000' -> 150000; '' -> null. */
+/** Keep digits only from keypad input. '150.000' -> 150000; '' -> null. */
 export function parseAmountInput(text) {
   const digits = String(text ?? '').replace(/\D/g, '');
   if (!digits) return null;
