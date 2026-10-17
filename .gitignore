@@ -1,0 +1,11 @@
+# Konfigurasi lokal PC (berisi path pribadi)
+.claude/
+# Jangan pernah commit data atau cadangan keuangan
+*.json.bak
+neraca-cadangan-*.json
+*.xlsx
+# Sampah sistem
+node_modules/
+__pycache__/
+Thumbs.db
+desktop.ini
