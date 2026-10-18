@@ -74,7 +74,8 @@ def main(folder):
             check(ws['A2'].value == 'No transactions.', f"{day['sheet']}: empty-day note missing")
 
     wa = load_workbook(folder / exp['allFile'])
-    check(wa.sheetnames == ['Transactions', 'Accounts', 'Portfolio', 'Info'], f'all-export sheets: {wa.sheetnames}')
+    check(wa.sheetnames == ['Transactions', 'Accounts', 'Portfolio', 'Info', 'Valuations'], f'all-export sheets: {wa.sheetnames}')
+    check('Valuation_History' in wa['Valuations'].tables, 'Valuation_History table missing')
     ws = wa['Transactions']
     header, rows, _ = table_rows(ws, ws.tables['All_Transactions'])
     check(header == exp['allColumns'], f'kolom semua: {header}')

@@ -1,6 +1,6 @@
 // Service worker: keeps the app usable offline. No financial data passes through here;
 // only app files (code, styles, icons) are cached.
-const VERSION = 'neraca-v0.2.0';
+const VERSION = 'neraca-v0.2.1';
 const PRECACHE = [
   './',
   'index.html',

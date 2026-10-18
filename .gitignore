@@ -1,10 +1,12 @@
-# Konfigurasi lokal PC (berisi path pribadi)
+# Local PC configuration (contains personal paths)
 .claude/
-# Jangan pernah commit data atau cadangan keuangan
+# Never commit financial data, backups, exports, or reports
 *.json.bak
 neraca-cadangan-*.json
+neraca-backup-*.json
 *.xlsx
-# Sampah sistem
+Monthly Report/
+# System clutter
 node_modules/
 __pycache__/
 Thumbs.db
