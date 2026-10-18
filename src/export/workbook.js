@@ -1,8 +1,8 @@
 // .xlsx workbook builder. Takes the ExcelJS object as a parameter so it works in the browser and in Node tests.
 // Workbooks are always rebuilt in full from the data, never patched.
-import { TX, DEFAULT_TYPE_GROUPS, GROUP } from '../core/model.js';
+import { TX, DEFAULT_TYPE_GROUPS, GROUP, LIQUIDITY_LABELS } from '../core/model.js';
 import {
-  weekDates, weekFileBase, daySheetName, formatLongDate, formatShortDate, formatTimestampWib, addDays, parts, weekStart,
+  weekDates, weekFileBase, daySheetName, formatLongDate, formatShortDate, formatTimestampWib, addDays, parts, weekStart, isIsoDate,
 } from '../core/dates.js';
 import { balances, flows, costRemovedMap, netCashEffect, holdingStates } from '../core/ledger.js';
 import { formatRp } from '../core/money.js';
@@ -198,9 +198,23 @@ export const ALL_COLUMNS = [
   'Date', 'Week', 'Month', 'Type', 'Account', 'To account', 'Category', 'Subcategory', 'Instrument', 'Holding',
   'Units', 'Description', 'Amount (Rp)', 'Cash effect (Rp)', 'Cost removed (Rp)', 'ID', 'Created', 'Updated',
 ];
+// New columns and sheets are only ever appended, so parsers that read the existing ones keep working.
+export const PORTFOLIO_COLUMNS = [
+  'Holding', 'Instrument', 'Platform', 'Cost (Rp)', 'Value (Rp)', 'Value status', 'Last valuation',
+  'Risk score (1-5)', 'Liquidity',
+];
+export const VALUATION_COLUMNS = ['Holding', 'Instrument', 'Date', 'Value (Rp)'];
+export const ALL_SHEETS = ['Transactions', 'Accounts', 'Portfolio', 'Info', 'Valuations'];
 
-/** One complete table for cross-week analysis, plus Accounts, Portfolio, and Info sheets. */
-export function buildAllTransactionsWorkbook(ExcelJS, data, { typeGroups, now = new Date(), isTestData = false, today } = {}) {
+/**
+ * One complete table for cross-week analysis, plus Accounts, Portfolio, Info, and Valuations sheets.
+ * Optional from/to (inclusive ISO dates) limit only the Transactions sheet; Accounts, Portfolio, and
+ * Valuations always reflect the export day.
+ */
+export function buildAllTransactionsWorkbook(ExcelJS, data, {
+  typeGroups, now = new Date(), isTestData = false, today, from = null, to = null,
+} = {}) {
+  if ((from || to) && !(isIsoDate(from) && isIsoDate(to) && from <= to)) throw new Error('Invalid date range.');
   const label = labelsFrom(typeGroups);
   const lk = lookups(data);
   const removed = costRemovedMap(data);
@@ -210,7 +224,9 @@ export function buildAllTransactionsWorkbook(ExcelJS, data, { typeGroups, now = 
   wb.created = now;
 
   const ws = wb.addWorksheet('Transactions', { views: [{ state: 'frozen', ySplit: 1 }] });
-  const txs = data.transactions.filter((t) => !t.deletedAt).sort(sortTx);
+  const txs = data.transactions
+    .filter((t) => !t.deletedAt && (!from || (t.date >= from && t.date <= to)))
+    .sort(sortTx);
   const rows = txs.map((t) => {
     const { instrument, holding } = instrumentAndHolding(t, lk);
     return [
@@ -237,13 +253,17 @@ export function buildAllTransactionsWorkbook(ExcelJS, data, { typeGroups, now = 
 
   const wp = wb.addWorksheet('Portfolio');
   const statusLabel = { dinilai: 'Valued', perkiraan: 'Estimated', belum_dinilai: 'Not valued' };
-  const pRows = holdingStates(data, today ?? null).filter((s) => s.isOpen).map((s) => [
-    s.holding.name, lk.inst.get(s.holding.instrumentId)?.name ?? '', s.holding.platform ?? '', s.cost, s.value,
-    statusLabel[s.status], s.lastValuationDate ? excelDate(s.lastValuationDate) : null,
-  ]);
-  const np = addTable(wp, { name: 'Investment_Holdings', ref: 'A1', columns: ['Holding', 'Instrument', 'Platform', 'Cost (Rp)', 'Value (Rp)', 'Value status', 'Last valuation'].map((name) => ({ name })), rows: pRows });
+  const pRows = holdingStates(data, today ?? null).filter((s) => s.isOpen).map((s) => {
+    const inst = lk.inst.get(s.holding.instrumentId);
+    return [
+      s.holding.name, inst?.name ?? '', s.holding.platform ?? '', s.cost, s.value,
+      statusLabel[s.status], s.lastValuationDate ? excelDate(s.lastValuationDate) : null,
+      inst?.riskScore ?? null, LIQUIDITY_LABELS[inst?.liquidity] ?? '',
+    ];
+  });
+  const np = addTable(wp, { name: 'Investment_Holdings', ref: 'A1', columns: PORTFOLIO_COLUMNS.map((name) => ({ name })), rows: pRows });
   formatColumns(wp, 2, 1 + np, [[4, RP_FORMAT], [5, RP_FORMAT], [7, DATE_FORMAT]]);
-  [28, 24, 18, 16, 16, 14, 16].forEach((w, i) => { wp.getColumn(i + 1).width = w; });
+  [28, 24, 18, 16, 16, 14, 16, 16, 18].forEach((w, i) => { wp.getColumn(i + 1).width = w; });
 
   const wi = wb.addWorksheet('Info');
   styleTitle(wi.getCell('A1'), `${prefix}Neraca: all transactions export`);
@@ -255,11 +275,25 @@ export function buildAllTransactionsWorkbook(ExcelJS, data, { typeGroups, now = 
     ['Cash effect', 'Change in total cash & bank caused by the transaction; transfers between own accounts are 0.'],
     ['Amount (Rp)', 'Always positive; read the direction from the Type and Cash effect columns.'],
     ['Cost removed', 'For investment cash-outs: the cost basis leaving the holding. Realized gain = Amount - Cost removed.'],
+    ['Test data', isTestData ? 'Yes' : 'No'],
+    ['Period from', from ?? 'Full history'],
+    ['Period to', to ?? 'Full history'],
+    ['Period note', 'The period applies to the Transactions sheet only. Accounts, Portfolio, and Valuations reflect the export day.'],
   ];
   info.forEach(([k, v], i) => { wi.getCell(i + 3, 1).value = k; wi.getCell(i + 3, 1).font = { bold: true }; wi.getCell(i + 3, 2).value = v; });
   wi.getColumn(1).width = 20;
   wi.getColumn(2).width = 90;
 
+  const wv = wb.addWorksheet('Valuations', { views: [{ state: 'frozen', ySplit: 1 }] });
+  const vRows = [...data.valuations]
+    .map((v) => ({ v, h: lk.hold.get(v.holdingId) }))
+    .sort((a, b) => String(a.h?.name ?? '').localeCompare(String(b.h?.name ?? '')) || (a.v.date < b.v.date ? -1 : a.v.date > b.v.date ? 1 : 0))
+    .map(({ v, h }) => [h?.name ?? '(deleted holding)', lk.inst.get(h?.instrumentId)?.name ?? '', excelDate(v.date), v.value]);
+  const nv = addTable(wv, { name: 'Valuation_History', ref: 'A1', columns: VALUATION_COLUMNS.map((name) => ({ name, filterButton: true })), rows: vRows });
+  formatColumns(wv, 2, 1 + nv, [[3, DATE_FORMAT], [4, RP_FORMAT]]);
+  [28, 24, 14, 18].forEach((w, i) => { wv.getColumn(i + 1).width = w; });
+
   const stamp = (today ?? new Date(now.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10));
-  return { workbook: wb, fileName: `neraca-all-transactions-${stamp}.xlsx` };
+  const fileName = from ? `neraca-all-transactions-${from}_to_${to}.xlsx` : `neraca-all-transactions-${stamp}.xlsx`;
+  return { workbook: wb, fileName };
 }

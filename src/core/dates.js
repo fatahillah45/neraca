@@ -127,6 +127,18 @@ export function addMonths(y, m, n) {
   return { y: Math.floor(idx / 12), m: (idx % 12) + 1 };
 }
 
+/**
+ * Latest complete monthly period that starts on startDay, e.g. the 25th-to-24th report period.
+ * On 25 Nov it is 25 Oct – 24 Nov; on 24 Nov it is still 25 Sep – 24 Oct.
+ */
+export function lastMonthlyPeriod(today, startDay = 25) {
+  const { y, m, d } = parts(today);
+  const end = d >= startDay ? { y, m } : addMonths(y, m, -1);
+  const start = addMonths(end.y, end.m, -1);
+  const pad = (n) => String(n).padStart(2, '0');
+  return { start: `${start.y}-${pad(start.m)}-${pad(startDay)}`, end: `${end.y}-${pad(end.m)}-${pad(startDay - 1)}` };
+}
+
 export function formatMonthLabel(y, m) {
   return `${MONTH_LONG[m - 1]} ${y}`;
 }

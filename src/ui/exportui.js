@@ -1,6 +1,6 @@
 import { html, useState, useEffect } from '../../vendor/htm-preact-standalone.module.js';
 import { useApp, TopBar } from './app.js';
-import { weekStart, addDays, weekFileBase, weekFolderHint } from '../core/dates.js';
+import { weekStart, addDays, weekFileBase, weekFolderHint, lastMonthlyPeriod, formatShortDate } from '../core/dates.js';
 import { buildWeeklyWorkbook, buildAllTransactionsWorkbook } from '../export/workbook.js';
 import { serializeBackup, parseBackup, backupFileName } from '../export/backup.js';
 import { loadExcelJS, canShareFile, shareFile, downloadFile, workbookToFile } from '../export/share.js';
@@ -42,6 +42,10 @@ export function ExportScreen() {
   const [ready, setReady] = useState(null); // { file, monday?, note }
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
+  const report = lastMonthlyPeriod(today);
+  const [period, setPeriod] = useState('all'); // 'all' | 'report' | 'custom'
+  const [custom, setCustom] = useState(report);
+  const range = period === 'report' ? report : period === 'custom' ? custom : null;
 
   const live = snap.transactions.filter((t) => !t.deletedAt);
   const starts = [...snap.accounts.map((a) => a.openingDate), ...live.map((t) => t.date)].filter(Boolean).sort();
@@ -67,8 +71,10 @@ export function ExportScreen() {
     setBusy('all'); setError(null);
     try {
       const ExcelJS = await loadExcelJS();
-      const { workbook, fileName } = buildAllTransactionsWorkbook(ExcelJS, snap, { typeGroups, isTestData: isTest, today });
-      setReady({ file: await workbookToFile(workbook, fileName), note: `${live.length} transactions` });
+      if (range && !(range.start && range.end && range.start <= range.end)) throw new Error('choose a start date on or before the end date');
+      const { workbook, fileName } = buildAllTransactionsWorkbook(ExcelJS, snap, { typeGroups, isTestData: isTest, today, from: range?.start ?? null, to: range?.end ?? null });
+      const count = range ? live.filter((t) => t.date >= range.start && t.date <= range.end).length : live.length;
+      setReady({ file: await workbookToFile(workbook, fileName), note: `${count} transactions` });
     } catch (e) {
       setError(`Could not build the file: ${e.message}`);
     } finally { setBusy(null); }
@@ -85,7 +91,19 @@ export function ExportScreen() {
       ${error && html`<div class="banner danger">${error}</div>`}
       <section class="card">
         <h2>All transactions</h2>
-        <div class="muted small">One complete table for analysis across weeks. Send this file when you want an analysis.</div>
+        <div class="muted small">One complete table for analysis across weeks, plus accounts, portfolio with risk scores, and valuation history. Send this file when you want an analysis.</div>
+        <div class="section-label">Transactions period</div>
+        <div class="chips wrap">
+          <button class=${`chip ${period === 'all' ? 'on' : ''}`} onClick=${() => setPeriod('all')}>Full history</button>
+          <button class=${`chip ${period === 'report' ? 'on' : ''}`} onClick=${() => setPeriod('report')}>${formatShortDate(report.start)} – ${formatShortDate(report.end)}</button>
+          <button class=${`chip ${period === 'custom' ? 'on' : ''}`} onClick=${() => setPeriod('custom')}>Custom</button>
+        </div>
+        ${period === 'custom' && html`<div class="row" style="margin-top:6px">
+          <input class="input" type="date" value=${custom.start} max=${custom.end} onInput=${(e) => setCustom({ ...custom, start: e.target.value })} />
+          <span class="muted">–</span>
+          <input class="input" type="date" value=${custom.end} min=${custom.start} onInput=${(e) => setCustom({ ...custom, end: e.target.value })} />
+        </div>`}
+        ${period !== 'all' && html`<div class="faint small" style="margin-top:6px">The period limits the Transactions sheet only. Accounts, portfolio, and valuations are as of today.</div>`}
         <button class="btn primary block" style="margin-top:12px" disabled=${busy} onClick=${makeAll}>${busy === 'all' ? 'Building…' : 'Export all transactions (.xlsx)'}</button>
       </section>
       <section class="card">

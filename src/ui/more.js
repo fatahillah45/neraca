@@ -46,7 +46,7 @@ function Menu() {
         ${item('#/more/how', 'How it is calculated', 'Metric formulas and risk assumptions')}
         ${item('#/more/mode', 'Data mode', isTest ? 'Currently using TEST DATA' : 'Currently using real data')}
       </section>
-      <p class="faint small" style="text-align:center">Neraca v0.2 · data is stored only on this phone</p>
+      <p class="faint small" style="text-align:center">Neraca v0.2.1 · data is stored only on this phone</p>
     </main>`;
 }
 
